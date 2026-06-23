@@ -319,67 +319,106 @@ function initScene(canvas) {
   makeRam(anchor(boomPivot, 0, 3.0, 0.42), anchor(stickPivot, 0, 0.7, 0.34), 1.4, 0.12, 0.07);
   makeRam(anchor(stickPivot, 0, 1.9, 0.36), anchor(bucketPivot, 0, 0.35, 0.18), 1.1, 0.1, 0.06);
 
-  // ===== Hydra mobile crane =====
+  // ===== Hydra mobile hydraulic crane (large, detailed) =====
   const crane = new THREE.Group();
-  crane.position.set(liftPipeX, 0, -4.6); scene.add(crane);
-  const crChassis = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.7, 4.6), paintYellow);
-  crChassis.position.set(0, 0.95, 0); crChassis.castShadow = true; crane.add(crChassis);
-  const crDeck = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.2, 3.6), paintYellowDark);
-  crDeck.position.set(0, 1.35, 0); crane.add(crDeck);
-  // wheels
-  [-1, 1].forEach((sx) => [-1.5, -0.4, 1.5].forEach((sz) => {
-    const w = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.42, 22), rubberMat);
-    w.rotation.z = Math.PI / 2; w.position.set(sx * 1.1, 0.55, sz); w.castShadow = true; crane.add(w);
-    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.44, 10), steelMat);
-    hub.rotation.z = Math.PI / 2; hub.position.copy(w.position); crane.add(hub);
-  }));
-  // outriggers (deployed)
-  [-1, 1].forEach((sx) => [-1, 1].forEach((sz) => {
-    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.18, 0.18), steelMat);
-    arm.position.set(sx * 1.4, 0.7, sz * 1.9); crane.add(arm);
-    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.7, 12), chromeMat);
-    leg.position.set(sx * 1.75, 0.35, sz * 1.9); leg.castShadow = true; crane.add(leg);
-    const pad = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.1, 14), darkSteel);
-    pad.position.set(sx * 1.75, 0.05, sz * 1.9); pad.castShadow = true; pad.receiveShadow = true; crane.add(pad);
-  }));
-  // operator cab
-  const crCab = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.05, 1.1), paintYellow);
-  crCab.position.set(0.55, 1.95, 1.45); crCab.castShadow = true; crane.add(crCab);
-  const crGlass = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.75, 0.92), glassMat);
-  crGlass.position.set(1.07, 2.02, 1.47); crane.add(crGlass);
-  const crBeacon = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.16, 12),
-    new THREE.MeshStandardMaterial({ color: '#ff7b00', emissive: '#ff6a00', emissiveIntensity: 1 }));
-  crBeacon.position.set(0.55, 2.55, 1.45); crane.add(crBeacon);
-  // slewing turntable + boom foot
-  const turn = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.9, 0.4, 22), steelMat);
-  turn.position.set(0, 1.5, -0.2); crane.add(turn);
+  crane.position.set(liftPipeX, 0, -5.4); scene.add(crane); // carrier long-axis along X, boom faces +Z
+  const emissiveOrange = () => new THREE.MeshStandardMaterial({ color: '#ff7b00', emissive: '#ff6a00', emissiveIntensity: 1 });
+  const headlampMat = new THREE.MeshStandardMaterial({ color: '#fff7e0', emissive: '#fff0c0', emissiveIntensity: 0.7 });
 
-  const boomBase = new THREE.Group();
-  boomBase.position.set(0, 1.65, 0.4); boomBase.rotation.x = 0.74; crane.add(boomBase);
-  // 3-section telescopic boom (nested, decreasing)
-  const sec1 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 2.6, 0.5), paintYellow);
-  sec1.position.set(0, 1.3, 0); sec1.castShadow = true; boomBase.add(sec1);
-  const sec2 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 2.4, 0.4), paintYellowDark);
-  sec2.position.set(0, 3.0, 0); sec2.castShadow = true; boomBase.add(sec2);
-  const sec3 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.2, 0.3), paintYellow);
-  sec3.position.set(0, 4.6, 0); sec3.castShadow = true; boomBase.add(sec3);
-  // boom-head with sheaves
-  const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.45), darkSteel);
-  head.position.set(0, 5.7, 0); head.castShadow = true; boomBase.add(head);
-  [-0.12, 0.12].forEach((zz) => {
-    const sh = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.1, 16), chromeMat);
-    sh.rotation.z = Math.PI / 2; sh.position.set(0, 5.7, zz); boomBase.add(sh);
+  // --- Carrier (truck chassis) ---
+  const chForm = new THREE.Mesh(new THREE.BoxGeometry(6.2, 0.55, 2.0), darkSteel);
+  chForm.position.set(0, 0.92, 0); chForm.castShadow = true; crane.add(chForm);
+  const chDeck = new THREE.Mesh(new THREE.BoxGeometry(6.4, 0.3, 2.3), paintYellow);
+  chDeck.position.set(0, 1.25, 0); chDeck.castShadow = true; crane.add(chDeck);
+  [-1, 1].forEach((s) => {
+    const fender = new THREE.Mesh(new THREE.BoxGeometry(6.4, 0.12, 0.5), paintYellowDark);
+    fender.position.set(0, 1.48, s * 1.05); crane.add(fender);
   });
-  // luffing ram (chassis -> boom underside)
-  makeRam(anchor(crane, 0, 1.15, 1.5), anchor(boomBase, 0, 2.1, -0.05), 1.6, 0.14, 0.09);
+  // Driver cab (+X front)
+  const dCab = new THREE.Mesh(new THREE.BoxGeometry(1.3, 1.25, 2.0), paintYellow);
+  dCab.position.set(2.8, 2.05, 0); dCab.castShadow = true; crane.add(dCab);
+  const dGlass = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.7, 1.7), glassMat);
+  dGlass.position.set(3.46, 2.2, 0); crane.add(dGlass);
+  [0.7, -0.7].forEach((z) => { const h = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.2, 0.2), headlampMat); h.position.set(3.46, 1.7, z); crane.add(h); });
+  // Big tyres (2 axles x 2 sides)
+  function bigWheel(x, z) {
+    const g = new THREE.Group();
+    const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 0.72, 0.55, 28), rubberMat);
+    tire.rotation.x = Math.PI / 2; tire.castShadow = true; g.add(tire);
+    const tread = new THREE.Mesh(new THREE.TorusGeometry(0.72, 0.09, 10, 30), rubberMat);
+    g.add(tread);
+    const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.57, 16), steelMat);
+    rim.rotation.x = Math.PI / 2; g.add(rim);
+    for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; const lug = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 6), darkSteel); lug.position.set(Math.cos(a) * 0.18, Math.sin(a) * 0.18, 0.3); g.add(lug); }
+    g.position.set(x, 0.72, z); return g;
+  }
+  [2.0, -2.0].forEach((x) => [1.2, -1.2].forEach((z) => crane.add(bigWheel(x, z))));
+  // Outriggers (4 corners, deployed)
+  [-1, 1].forEach((sx) => [-1, 1].forEach((sz) => {
+    const beam = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.22, 1.4), steelMat);
+    beam.position.set(sx * 2.5, 1.0, sz * 1.0); crane.add(beam);
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 1.05, 14), chromeMat);
+    leg.position.set(sx * 2.5, 0.5, sz * 1.95); leg.castShadow = true; crane.add(leg);
+    const pad = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.12, 16), darkSteel);
+    pad.position.set(sx * 2.5, 0.06, sz * 1.95); pad.castShadow = true; pad.receiveShadow = true; crane.add(pad);
+  }));
 
-  // Hook hardware: boom tip anchor, 2 cable falls, hook block, hook, slings
-  const boomTip = anchor(boomBase, 0, 5.75, 0);
-  const cableMat = new THREE.MeshStandardMaterial({ color: '#0c0c10', roughness: 0.9, metalness: 0.4 });
-  const fall1 = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1, 8), cableMat); fall1.castShadow = true; scene.add(fall1);
-  const fall2 = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1, 8), cableMat); fall2.castShadow = true; scene.add(fall2);
-  const hookBlock = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.5, 0.26), darkSteel); hookBlock.castShadow = true; scene.add(hookBlock);
-  const hook = new THREE.Mesh(new THREE.TorusGeometry(0.13, 0.05, 10, 18, Math.PI * 1.4), steelMat); hook.castShadow = true; scene.add(hook);
+  // --- Slewing superstructure ---
+  const sup = new THREE.Group();
+  sup.position.set(-0.5, 1.55, 0); crane.add(sup);
+  const turn = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.2, 0.42, 28), steelMat);
+  turn.position.set(0, 0.2, 0); turn.castShadow = true; sup.add(turn);
+  const supDeck = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.5, 2.5), paintYellow);
+  supDeck.position.set(0, 0.62, 0); supDeck.castShadow = true; sup.add(supDeck);
+  const eng = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.95, 1.7), paintYellow);
+  eng.position.set(-0.3, 1.1, -0.2); eng.castShadow = true; sup.add(eng);
+  const louvers = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.7, 1.4), darkSteel);
+  louvers.position.set(-1.05, 1.05, -0.2); sup.add(louvers);
+  // Counterweight (heavy rear, away from boom)
+  const cw = new THREE.Mesh(new THREE.BoxGeometry(2.3, 1.6, 0.95), paintYellowDark);
+  cw.position.set(0, 1.05, -1.5); cw.castShadow = true; sup.add(cw);
+  const cwPlate = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.3, 0.08), darkSteel);
+  cwPlate.position.set(0, 1.05, -2.0); sup.add(cwPlate);
+  // Operator cab beside the boom (+X)
+  const opCab = new THREE.Mesh(new THREE.BoxGeometry(1.05, 1.4, 1.5), paintYellow);
+  opCab.position.set(1.15, 1.4, 0.5); opCab.castShadow = true; sup.add(opCab);
+  const opGlassF = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.05, 1.25), glassMat);
+  opGlassF.position.set(1.69, 1.45, 0.5); sup.add(opGlassF);
+  const opGlassS = new THREE.Mesh(new THREE.BoxGeometry(0.95, 1.05, 0.06), glassMat);
+  opGlassS.position.set(1.15, 1.45, 1.26); sup.add(opGlassS);
+  const crBeacon = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.18, 12), emissiveOrange());
+  crBeacon.position.set(-0.3, 1.7, -0.2); sup.add(crBeacon);
+  // Hoist winch drum
+  const winch = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.75, 18), darkSteel);
+  winch.rotation.x = Math.PI / 2; winch.position.set(-0.3, 1.1, 0.7); winch.castShadow = true; sup.add(winch);
+
+  // --- Telescopic boom (4 sections) on the superstructure ---
+  const boomBase = new THREE.Group();
+  boomBase.position.set(0, 0.95, 0.55); boomBase.rotation.x = 0.74; sup.add(boomBase);
+  function boomSec(len, w, y, mat) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, len, w), mat); m.position.set(0, y, 0); m.castShadow = true; boomBase.add(m); }
+  boomSec(2.5, 0.62, 1.25, paintYellow);
+  boomSec(2.3, 0.52, 2.95, paintYellowDark);
+  boomSec(2.1, 0.42, 4.45, paintYellow);
+  boomSec(1.9, 0.32, 5.9, paintYellowDark);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.6, 0.5), darkSteel);
+  head.position.set(0, 6.85, 0); head.castShadow = true; boomBase.add(head);
+  [-0.15, 0, 0.15].forEach((zz) => {
+    const sh = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.1, 18), chromeMat);
+    sh.rotation.z = Math.PI / 2; sh.position.set(0, 7.0, zz); boomBase.add(sh);
+  });
+  const boomTip = anchor(boomBase, 0, 7.0, 0);
+  // Big luffing cylinder (superstructure -> boom underside)
+  makeRam(anchor(sup, 0, 0.5, 1.4), anchor(boomBase, 0, 2.6, -0.34), 2.0, 0.17, 0.11);
+
+  // --- Wire rope (3 falls), hook block with sheave + hook, slings ---
+  const cableMat = new THREE.MeshStandardMaterial({ color: '#0c0c10', roughness: 0.85, metalness: 0.5 });
+  const falls = [-0.15, 0, 0.15].map(() => { const f = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1, 8), cableMat); f.castShadow = true; scene.add(f); return f; });
+  const hookBlock = new THREE.Group(); scene.add(hookBlock);
+  const hbBody = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.5, 0.34), darkSteel); hbBody.castShadow = true; hookBlock.add(hbBody);
+  [-0.24, 0.24].forEach((x) => { const pl = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.55, 0.42), steelMat); pl.position.x = x; hookBlock.add(pl); });
+  const hbSheave = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.34, 16), chromeMat); hbSheave.rotation.z = Math.PI / 2; hbSheave.position.y = 0.18; hookBlock.add(hbSheave);
+  const hookCurve = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.06, 12, 22, Math.PI * 1.5), steelMat); hookCurve.position.y = -0.45; hookCurve.rotation.x = Math.PI / 2; hookBlock.add(hookCurve);
+  const hookTip = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.16, 8), steelMat); hookTip.position.set(0.15, -0.5, 0); hookBlock.add(hookTip);
   const slingMat = new THREE.MeshStandardMaterial({ color: '#2a2a2a', roughness: 0.8 });
   const sling1 = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1, 6), slingMat); sling1.castShadow = true; scene.add(sling1);
   const sling2 = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1, 6), slingMat); sling2.castShadow = true; scene.add(sling2);
@@ -388,17 +427,18 @@ function initScene(canvas) {
   const tipWorldPos = new THREE.Vector3();
   scene.updateMatrixWorld(true);
   boomTip.getWorldPosition(tipWorldPos);
-  const hp = new THREE.Vector3(), lugL = new THREE.Vector3(), lugR = new THREE.Vector3(), t1 = new THREE.Vector3(), t2 = new THREE.Vector3();
+  const hp = new THREE.Vector3(), lugL = new THREE.Vector3(), lugR = new THREE.Vector3(), tf = new THREE.Vector3(), hf = new THREE.Vector3();
   function updateCrane() {
     liftingPipe.position.x = tipWorldPos.x; liftingPipe.position.z = tipWorldPos.z;
     const pipeTopY = liftingPipe.position.y + pipeRadius;
-    hookBlock.position.set(tipWorldPos.x, pipeTopY + 0.6, tipWorldPos.z);
-    hook.position.set(tipWorldPos.x, pipeTopY + 0.35, tipWorldPos.z); hook.rotation.x = Math.PI / 2;
-    hp.copy(hookBlock.position).setY(hookBlock.position.y + 0.25);
-    t1.set(tipWorldPos.x, tipWorldPos.y, tipWorldPos.z - 0.12);
-    t2.set(tipWorldPos.x, tipWorldPos.y, tipWorldPos.z + 0.12);
-    linkBetween(fall1, t1, hp.clone().setZ(hp.z - 0.06));
-    linkBetween(fall2, t2, hp.clone().setZ(hp.z + 0.06));
+    hookBlock.position.set(tipWorldPos.x, pipeTopY + 0.8, tipWorldPos.z);
+    const fallTopY = hookBlock.position.y + 0.3;
+    falls.forEach((f, i) => {
+      const off = (i - 1) * 0.15;
+      tf.set(tipWorldPos.x, tipWorldPos.y, tipWorldPos.z + off);
+      hf.set(tipWorldPos.x, fallTopY, tipWorldPos.z + off);
+      linkBetween(f, tf, hf);
+    });
     pipeLug.position.set(tipWorldPos.x, pipeTopY + 0.08, tipWorldPos.z);
     lugL.set(tipWorldPos.x - 0.45, pipeTopY, tipWorldPos.z);
     lugR.set(tipWorldPos.x + 0.45, pipeTopY, tipWorldPos.z);
@@ -505,10 +545,10 @@ function initScene(canvas) {
     excavator.position.y = Math.sin(t * 1.1) * 0.012;
 
     const orbit = t * 0.05;
-    camera.position.x += (Math.cos(orbit) * 23 + mx * 5 - camera.position.x) * 0.02;
-    camera.position.z += (Math.sin(orbit) * 23 - camera.position.z) * 0.02;
-    camera.position.y += (9.5 - my * 3.5 - camera.position.y) * 0.02;
-    camera.lookAt(0, 0.4, 0);
+    camera.position.x += (Math.cos(orbit) * 26 + mx * 5 - camera.position.x) * 0.02;
+    camera.position.z += (Math.sin(orbit) * 26 - camera.position.z) * 0.02;
+    camera.position.y += (11 - my * 4 - camera.position.y) * 0.02;
+    camera.lookAt(1.0, 1.2, 0);
 
     renderer.render(scene, camera);
   }
