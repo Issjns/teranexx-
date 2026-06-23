@@ -147,8 +147,8 @@ function initScene(canvas) {
     });
     return g;
   }
-  const firstLaidX = -2.6, pipeStep = pipeLen + 0.2;
-  for (let i = 0; i < 7; i++) {
+  const firstLaidX = -2.4, pipeStep = pipeLen + 0.05; // tight joints = continuous pipeline
+  for (let i = 0; i < 46; i++) {
     const p = makePipe(); p.position.set(firstLaidX - i * pipeStep, pipeRestY, 0); scene.add(p);
   }
   const liftingPipe = makePipe();
