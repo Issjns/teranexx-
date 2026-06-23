@@ -139,6 +139,56 @@ function initScene(canvas) {
   liftingPipe.position.set(liftPipeX, pipeRestY, 0);
   scene.add(liftingPipe);
 
+  // ===== Lifting gantry with hydraulic legs + sling cables that HOLD the pipe =====
+  const gantry = new THREE.Group();
+  gantry.position.set(liftPipeX, 0, 0);
+  scene.add(gantry);
+  const beamY = 5.0;
+  // Two hydraulic legs straddling the trench (sleeve + chrome rod)
+  [-1, 1].forEach((side) => {
+    const z = side * 1.75;
+    const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 3.0, 16), exYellowDark);
+    sleeve.position.set(0, 1.5, z); sleeve.castShadow = true; gantry.add(sleeve);
+    const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 2.4, 16), ramMat);
+    rod.position.set(0, 3.7, z); rod.castShadow = true; gantry.add(rod);
+    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.18, 0.7), steelMat);
+    foot.position.set(0, 0.09, z); foot.castShadow = true; gantry.add(foot);
+  });
+  // Top cross beam
+  const beam = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.4, 4.0), exYellow);
+  beam.position.set(0, beamY, 0); beam.castShadow = true; gantry.add(beam);
+  // Winch drum on the beam
+  const winch = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.7, 16), steelMat);
+  winch.position.set(0, beamY - 0.15, 0); winch.rotation.x = Math.PI / 2; winch.castShadow = true; gantry.add(winch);
+
+  // Two sling cables (unit-height cylinders we rescale every frame to connect beam -> pipe)
+  const cableMat = new THREE.MeshStandardMaterial({ color: '#0c0c10', roughness: 0.9, metalness: 0.3 });
+  const cableGeo = new THREE.CylinderGeometry(0.04, 0.04, 1, 8);
+  const slingZ = 0.55;
+  const cables = [-1, 1].map((side) => {
+    const c = new THREE.Mesh(cableGeo, cableMat);
+    c.castShadow = true;
+    gantry.add(c);
+    return { mesh: c, z: side * slingZ };
+  });
+  // Lifting lug on top of the pipe (moves with the pipe)
+  const lug = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.16, 1.3), steelMat);
+  lug.castShadow = true;
+  scene.add(lug);
+  function updateRig() {
+    const surf = Math.sqrt(Math.max(0, pipeRadius * pipeRadius - slingZ * slingZ)); // pipe surface height at sling z
+    const topY = beamY - 0.25;
+    const pipeY = liftingPipe.position.y;
+    cables.forEach((c) => {
+      const bottomY = pipeY + surf;
+      const len = Math.max(0.05, topY - bottomY);
+      c.mesh.scale.y = len;
+      c.mesh.position.set(0, (topY + bottomY) / 2, c.z); // gantry-local (x already at liftPipeX)
+    });
+    lug.position.set(liftPipeX, pipeY + pipeRadius + 0.05, 0);
+  }
+  updateRig();
+
   // ===== Tracked excavator (faces -Z, digs into the trench in front) =====
   const excavator = new THREE.Group();
   const EXC_Z = 4.2;
@@ -343,6 +393,7 @@ function initScene(canvas) {
     liftingPipe.position.y = Math.max(pipeRestY, 3.4 - fall * 5.0);
     liftingPipe.position.x = liftPipeX;
     liftingPipe.rotation.z = Math.sin(t * 0.4) * 0.04;
+    updateRig(); // keep the sling cables connected to the pipe as it moves
 
     excavator.position.y = Math.sin(t * 1.1) * 0.012;
 
