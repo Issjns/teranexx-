@@ -148,9 +148,28 @@ function initScene(canvas) {
     return g;
   }
   const firstLaidX = -2.4, pipeStep = pipeLen + 0.05; // tight joints = continuous pipeline
+  const pipeCurve = (x) => Math.sin(x * 0.045) * 0.3;  // gentle meander into the distance
   for (let i = 0; i < 46; i++) {
-    const p = makePipe(); p.position.set(firstLaidX - i * pipeStep, pipeRestY, 0); scene.add(p);
+    const x = firstLaidX - i * pipeStep;
+    const p = makePipe(); p.position.set(x, pipeRestY, pipeCurve(x)); scene.add(p);
   }
+  // Backfilled (buried) section over the older pipeline, far into the distance
+  const bfStart = -15, bfEnd = -104;
+  const bfLen = Math.abs(bfEnd - bfStart), bfMid = (bfStart + bfEnd) / 2;
+  const backfill = new THREE.Mesh(new THREE.BoxGeometry(bfLen, 1.75, TRENCH_HALF * 2 - 0.06), dirtMat);
+  backfill.position.set(bfMid, TRENCH_FLOOR_TOP + 0.875, 0); // top sits ~0.25 above grade (mounded)
+  backfill.castShadow = true; backfill.receiveShadow = true; scene.add(backfill);
+  for (let x = bfStart - 1; x > bfEnd; x -= 2.4) {       // crowned soil mounds along the backfill
+    const s = 0.7 + Math.random() * 0.5;
+    const m = new THREE.Mesh(new THREE.ConeGeometry(s, s * 0.7, 9), dirtMat);
+    m.position.set(x, 0.25 + s * 0.35, (Math.random() - 0.5) * 0.5);
+    m.rotation.y = Math.random() * Math.PI; m.castShadow = true; m.receiveShadow = true; scene.add(m);
+  }
+  // Staged pipe stockpile (waiting to be laid) on the ground beside the trench
+  [6.2, 9.0].forEach((sx) => {
+    [3.4, 4.9].forEach((z) => { const p = makePipe(); p.position.set(sx, pipeRadius, z); scene.add(p); });
+    const top = makePipe(); top.position.set(sx, 1.88, 4.15); scene.add(top);
+  });
   const liftingPipe = makePipe();
   const liftPipeX = 2.6;
   liftingPipe.position.set(liftPipeX, pipeRestY, 0);
