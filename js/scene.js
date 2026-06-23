@@ -139,55 +139,103 @@ function initScene(canvas) {
   liftingPipe.position.set(liftPipeX, pipeRestY, 0);
   scene.add(liftingPipe);
 
-  // ===== Lifting gantry with hydraulic legs + sling cables that HOLD the pipe =====
-  const gantry = new THREE.Group();
-  gantry.position.set(liftPipeX, 0, 0);
-  scene.add(gantry);
-  const beamY = 5.0;
-  // Two hydraulic legs straddling the trench (sleeve + chrome rod)
-  [-1, 1].forEach((side) => {
-    const z = side * 1.75;
-    const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 3.0, 16), exYellowDark);
-    sleeve.position.set(0, 1.5, z); sleeve.castShadow = true; gantry.add(sleeve);
-    const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 2.4, 16), ramMat);
-    rod.position.set(0, 3.7, z); rod.castShadow = true; gantry.add(rod);
-    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.18, 0.7), steelMat);
-    foot.position.set(0, 0.09, z); foot.castShadow = true; gantry.add(foot);
-  });
-  // Top cross beam
-  const beam = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.4, 4.0), exYellow);
-  beam.position.set(0, beamY, 0); beam.castShadow = true; gantry.add(beam);
-  // Winch drum on the beam
-  const winch = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.7, 16), steelMat);
-  winch.position.set(0, beamY - 0.15, 0); winch.rotation.x = Math.PI / 2; winch.castShadow = true; gantry.add(winch);
-
-  // Two sling cables (unit-height cylinders we rescale every frame to connect beam -> pipe)
-  const cableMat = new THREE.MeshStandardMaterial({ color: '#0c0c10', roughness: 0.9, metalness: 0.3 });
-  const cableGeo = new THREE.CylinderGeometry(0.04, 0.04, 1, 8);
-  const slingZ = 0.55;
-  const cables = [-1, 1].map((side) => {
-    const c = new THREE.Mesh(cableGeo, cableMat);
-    c.castShadow = true;
-    gantry.add(c);
-    return { mesh: c, z: side * slingZ };
-  });
-  // Lifting lug on top of the pipe (moves with the pipe)
-  const lug = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.16, 1.3), steelMat);
-  lug.castShadow = true;
-  scene.add(lug);
-  function updateRig() {
-    const surf = Math.sqrt(Math.max(0, pipeRadius * pipeRadius - slingZ * slingZ)); // pipe surface height at sling z
-    const topY = beamY - 0.25;
-    const pipeY = liftingPipe.position.y;
-    cables.forEach((c) => {
-      const bottomY = pipeY + surf;
-      const len = Math.max(0.05, topY - bottomY);
-      c.mesh.scale.y = len;
-      c.mesh.position.set(0, (topY + bottomY) / 2, c.z); // gantry-local (x already at liftPipeX)
-    });
-    lug.position.set(liftPipeX, pipeY + pipeRadius + 0.05, 0);
+  // ===== "Hydra" mobile hydraulic crane (opposite the excavator) that lifts the pipe =====
+  // Helper: stretch/orient a unit-height cylinder between two world points (cables, rams)
+  const UP = new THREE.Vector3(0, 1, 0);
+  function linkBetween(mesh, a, b) {
+    const dir = new THREE.Vector3().subVectors(b, a);
+    const len = dir.length();
+    mesh.scale.set(1, Math.max(0.05, len), 1);
+    mesh.position.copy(a).add(b).multiplyScalar(0.5);
+    mesh.quaternion.setFromUnitVectors(UP, dir.normalize());
   }
-  updateRig();
+
+  const crane = new THREE.Group();
+  crane.position.set(liftPipeX, 0, -4.2); // opposite side of the trench, faces +z
+  scene.add(crane);
+
+  // Chassis + wheels (pick-and-carry mobile crane)
+  const chassis = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.7, 4.4), exYellow);
+  chassis.position.set(0, 0.95, 0); chassis.castShadow = true; crane.add(chassis);
+  const cWeight = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.0, 0.7), exYellowDark);
+  cWeight.position.set(0, 1.1, -2.0); cWeight.castShadow = true; crane.add(cWeight); // counterweight
+  [-1, 1].forEach((sx) => [-1, 1].forEach((sz) => {
+    const w = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.4, 20), trackMat);
+    w.rotation.z = Math.PI / 2; w.position.set(sx * 1.05, 0.55, sz * 1.45); w.castShadow = true; crane.add(w);
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.42, 12), steelMat);
+    hub.rotation.z = Math.PI / 2; hub.position.copy(w.position); crane.add(hub);
+  }));
+  // Operator cab (front)
+  const crCab = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.0, 1.0), exYellow);
+  crCab.position.set(0.55, 1.85, 1.5); crCab.castShadow = true; crane.add(crCab);
+  const crGlass = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.7, 0.85), glassMat);
+  crGlass.position.set(0.6, 1.95, 1.55); crane.add(crGlass);
+
+  // Boom pivot (luffs up toward the trench)
+  const boomBase = new THREE.Group();
+  boomBase.position.set(0, 1.4, 0.5);
+  boomBase.rotation.x = 0.722; // angle so the tip sits above the trench centre
+  crane.add(boomBase);
+  // Telescopic boom: outer + inner segments
+  const boomOuter = new THREE.Mesh(new THREE.BoxGeometry(0.48, 3.3, 0.48), exYellow);
+  boomOuter.position.set(0, 1.65, 0); boomOuter.castShadow = true; boomBase.add(boomOuter);
+  const boomInner = new THREE.Mesh(new THREE.BoxGeometry(0.34, 3.0, 0.34), exYellowDark);
+  boomInner.position.set(0, 4.1, 0); boomInner.castShadow = true; boomBase.add(boomInner);
+  // Boom-head pulley
+  const pulley = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.3, 14), steelMat);
+  pulley.rotation.x = Math.PI / 2; pulley.position.set(0, 5.5, 0); boomBase.add(pulley);
+
+  // Luffing hydraulic ram (chassis -> boom underside)
+  const ramAnchorA = new THREE.Object3D(); ramAnchorA.position.set(0, 1.0, 1.3); crane.add(ramAnchorA);
+  const ramAnchorB = new THREE.Object3D(); ramAnchorB.position.set(0, 2.0, 0); boomBase.add(ramAnchorB);
+  const luffRam = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 1, 14), ramMat);
+  luffRam.castShadow = true; scene.add(luffRam);
+
+  // Boom tip (hook anchor), cable, hook block
+  const boomTip = new THREE.Object3D(); boomTip.position.set(0, 5.5, 0); boomBase.add(boomTip);
+  const craneCable = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 1, 8),
+    new THREE.MeshStandardMaterial({ color: '#0c0c10', roughness: 0.9, metalness: 0.3 }));
+  craneCable.castShadow = true; scene.add(craneCable);
+  const hookBlock = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.4, 0.3), steelMat);
+  hookBlock.castShadow = true; scene.add(hookBlock);
+  // Two short slings from the hook block to the pipe lug
+  const slingGeo = new THREE.CylinderGeometry(0.035, 0.035, 1, 6);
+  const slingMat = new THREE.MeshStandardMaterial({ color: '#222', roughness: 0.8 });
+  const slings = [-1, 1].map(() => { const s = new THREE.Mesh(slingGeo, slingMat); s.castShadow = true; scene.add(s); return s; });
+  const pipeLug = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.16, 1.2), steelMat);
+  pipeLug.castShadow = true; scene.add(pipeLug);
+
+  // Fixed world anchors (boom is static, so compute once)
+  const tipWorldPos = new THREE.Vector3();
+  const ramAWorld = new THREE.Vector3();
+  const ramBWorld = new THREE.Vector3();
+  scene.updateMatrixWorld(true);
+  ramAnchorA.getWorldPosition(ramAWorld);
+  ramAnchorB.getWorldPosition(ramBWorld);
+  linkBetween(luffRam, ramAWorld, ramBWorld);
+  boomTip.getWorldPosition(tipWorldPos);
+
+  const tmpHookTop = new THREE.Vector3();
+  const tmpLugL = new THREE.Vector3();
+  const tmpLugR = new THREE.Vector3();
+  function updateCrane() {
+    // Pipe hangs directly under the boom tip
+    liftingPipe.position.x = tipWorldPos.x;
+    liftingPipe.position.z = tipWorldPos.z;
+    const pipeTopY = liftingPipe.position.y + pipeRadius;
+    // Hook block sits just above the pipe
+    hookBlock.position.set(tipWorldPos.x, pipeTopY + 0.55, tipWorldPos.z);
+    // Main cable: boom tip -> hook block
+    tmpHookTop.set(tipWorldPos.x, hookBlock.position.y + 0.2, tipWorldPos.z);
+    linkBetween(craneCable, tipWorldPos, tmpHookTop);
+    // Slings: hook block -> pipe lug ends
+    pipeLug.position.set(tipWorldPos.x, pipeTopY + 0.08, tipWorldPos.z);
+    tmpLugL.set(tipWorldPos.x - 0.5, pipeTopY, tipWorldPos.z);
+    tmpLugR.set(tipWorldPos.x + 0.5, pipeTopY, tipWorldPos.z);
+    linkBetween(slings[0], hookBlock.position, tmpLugL);
+    linkBetween(slings[1], hookBlock.position, tmpLugR);
+  }
+  updateCrane();
 
   // ===== Tracked excavator (faces -Z, digs into the trench in front) =====
   const excavator = new THREE.Group();
@@ -387,13 +435,13 @@ function initScene(canvas) {
 
     beacon.material.emissiveIntensity = 0.6 + Math.abs(Math.sin(t * 4)) * 1.3;
 
-    // Pipe lowering with gravity feel, settling onto the trench floor then looping
+    // The crane lowers the pipe from its hook down onto the trench floor, then lifts it
     const pr = (Math.sin(t * 0.4 - 1.0) + 1) / 2;
     const fall = pr * pr;                       // accelerate down = weighty
-    liftingPipe.position.y = Math.max(pipeRestY, 3.4 - fall * 5.0);
-    liftingPipe.position.x = liftPipeX;
-    liftingPipe.rotation.z = Math.sin(t * 0.4) * 0.04;
-    updateRig(); // keep the sling cables connected to the pipe as it moves
+    const pipeHighY = 4.0;
+    liftingPipe.position.y = Math.max(pipeRestY, pipeHighY - fall * (pipeHighY - pipeRestY));
+    liftingPipe.rotation.z = 0;
+    updateCrane(); // keep cable + slings + hook attached to the pipe
 
     excavator.position.y = Math.sin(t * 1.1) * 0.012;
 
