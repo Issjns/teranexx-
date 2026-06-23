@@ -1,9 +1,10 @@
 // ===== Terranex Elite Infraprojects — 3D Hero Scene =====
 // A JCB-style backhoe excavator digging a trench and laying pipes underground.
-import * as THREE from 'three';
+// Uses the global THREE object loaded via js/three.min.js (classic script),
+// so the site works even when opened directly from a file (file://).
 
 const canvas = document.getElementById('scene3d');
-if (canvas) {
+if (canvas && typeof THREE !== 'undefined') {
   initScene(canvas);
 }
 
