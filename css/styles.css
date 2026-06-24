@@ -241,3 +241,24 @@ section { position: relative; }
   .footer-cols { grid-template-columns: 1fr 1fr; }
   .contact-left, .contact-form { padding: 32px 24px; }
 }
+
+
+/* ===== Leadership / Directors ===== */
+.leadership { padding: 110px 0; background: linear-gradient(180deg, var(--bg-soft), var(--bg)); }
+.directors-grid { max-width: 880px; margin: 48px auto 0; padding: 0 24px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 26px; }
+.director-card {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 36px 28px; text-align: center; transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.director-card:hover { transform: translateY(-6px); border-color: rgba(255, 176, 0, 0.35); box-shadow: var(--shadow); }
+.director-avatar {
+  width: 84px; height: 84px; margin: 0 auto 18px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.6rem; color: #1a1205;
+  background: linear-gradient(135deg, var(--amber), var(--amber-deep));
+  box-shadow: 0 10px 26px rgba(255, 138, 0, 0.3);
+}
+.director-card h3 { font-size: 1.35rem; margin-bottom: 4px; }
+.director-role { display: inline-block; color: var(--amber); font-size: 0.78rem; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 600; margin-bottom: 12px; }
+.director-card p { color: var(--muted); font-size: 0.95rem; }
+@media (max-width: 560px) { .directors-grid { grid-template-columns: 1fr; } }
