@@ -448,6 +448,7 @@ function initScene(canvas) {
   boomTip.getWorldPosition(tipWorldPos);
   const hp = new THREE.Vector3(), lugL = new THREE.Vector3(), lugR = new THREE.Vector3(), tf = new THREE.Vector3(), hf = new THREE.Vector3();
   function updateCrane() {
+    boomTip.getWorldPosition(tipWorldPos); // recompute every frame (the boom now slews)
     liftingPipe.position.x = tipWorldPos.x; liftingPipe.position.z = tipWorldPos.z;
     const pipeTopY = liftingPipe.position.y + pipeRadius;
     hookBlock.position.set(tipWorldPos.x, pipeTopY + 0.8, tipWorldPos.z);
@@ -464,6 +465,60 @@ function initScene(canvas) {
     linkBetween(sling1, hookBlock.position, lugL);
     linkBetween(sling2, hookBlock.position, lugR);
   }
+
+  // ===== Site dressing: stockpile the crane picks from, cones, guard rail, workers, branding =====
+  // Stockpile pipes at the crane's pick spot (within boom reach, beside the crane)
+  [[-2.0, -1.6, pipeRadius], [-2.0, -2.6, pipeRadius], [-2.0, -2.1, 1.88]].forEach((p) => {
+    const sp = makePipe(); sp.position.set(p[0], p[2], p[1]); scene.add(sp);
+  });
+  // Safety cones along both trench edges
+  function safetyCone(x, z) {
+    const g = new THREE.Group();
+    const c = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.5, 16), new THREE.MeshStandardMaterial({ color: '#ff5a1f', roughness: 0.6 }));
+    c.position.y = 0.3; c.castShadow = true;
+    const base = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.06, 0.34), new THREE.MeshStandardMaterial({ color: '#1a1a1a' }));
+    base.position.y = 0.03;
+    const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.15, 0.08, 16), new THREE.MeshStandardMaterial({ color: '#f2f2f2' }));
+    stripe.position.y = 0.3;
+    g.add(base, c, stripe); g.position.set(x, 0, z); scene.add(g);
+  }
+  for (let x = 4; x > -14; x -= 2.5) { safetyCone(x, 1.55); safetyCone(x, -1.55); }
+  // Guard rail along the +z trench edge
+  for (let x = 4; x > -14; x -= 3) {
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.75, 8), steelMat);
+    post.position.set(x, 0.37, 1.75); post.castShadow = true; scene.add(post);
+  }
+  const topRail = new THREE.Mesh(new THREE.BoxGeometry(18, 0.07, 0.07), new THREE.MeshStandardMaterial({ color: '#ffcc00', roughness: 0.5 }));
+  topRail.position.set(-5, 0.72, 1.75); topRail.castShadow = true; scene.add(topRail);
+  // Site workers (hi-vis vest + hard hat)
+  function worker(x, z, ry) {
+    const g = new THREE.Group();
+    const legs = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.7, 10), new THREE.MeshStandardMaterial({ color: '#1d2a44' })); legs.position.y = 0.35;
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 0.55, 10), new THREE.MeshStandardMaterial({ color: '#ff7b00', roughness: 0.6 })); torso.position.y = 0.95;
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 12), new THREE.MeshStandardMaterial({ color: '#caa07a' })); head.position.y = 1.32;
+    const hat = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#ffd000' })); hat.position.y = 1.4;
+    [legs, torso, head, hat].forEach((m) => { m.castShadow = true; g.add(m); });
+    g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g);
+  }
+  worker(1.3, 2.0, -0.6); worker(-3.2, -2.2, 1.2); worker(3.6, 1.9, 2.4);
+  // TERRANEX branding / livery
+  function brandTex(text) {
+    const c = document.createElement('canvas'); c.width = 512; c.height = 128;
+    const x = c.getContext('2d'); x.clearRect(0, 0, 512, 128);
+    x.fillStyle = '#141414'; x.font = 'bold 78px Arial'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillText(text, 256, 64);
+    const tx = new THREE.CanvasTexture(c); if ('colorSpace' in tx) tx.colorSpace = THREE.SRGBColorSpace; return tx;
+  }
+  const brand = brandTex('TERRANEX');
+  function decal(parent, w, h, px, py, pz, ry) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: brand, transparent: true }));
+    m.position.set(px, py, pz); m.rotation.y = ry; parent.add(m);
+  }
+  decal(house, 1.8, 0.5, -0.15, 0.7, 1.21, 0);          // excavator body, both sides
+  decal(house, 1.8, 0.5, -0.15, 0.7, -1.21, Math.PI);
+  decal(crane, 2.4, 0.45, 0, 1.55, 1.17, 0);            // crane carrier, both sides
+  decal(crane, 2.4, 0.45, 0, 1.55, -1.17, Math.PI);
+  decal(sup, 1.7, 0.45, 0, 1.05, -2.02, Math.PI);        // crane counterweight
 
   // ===== Gravity dirt clods =====
   const GRAVITY = -17;
@@ -554,10 +609,22 @@ function initScene(canvas) {
     beacon.material.emissiveIntensity = 0.6 + Math.abs(Math.sin(t * 4)) * 1.3;
     crBeacon.material.emissiveIntensity = 0.6 + Math.abs(Math.sin(t * 4 + 1)) * 1.3;
 
-    const pr = (Math.sin(t * 0.4 - 1.0) + 1) / 2;
-    const fall = pr * pr;
-    const pipeHighY = 4.0;
-    liftingPipe.position.y = Math.max(pipeRestY, pipeHighY - fall * (pipeHighY - pipeRestY));
+    // Crane slews to pick a pipe from the stockpile, then swings over and lowers it into the trench
+    const ss = (a, b, x) => { const k = Math.min(1, Math.max(0, (x - a) / (b - a))); return k * k * (3 - 2 * k); };
+    const u = (t * 0.11) % 1;
+    const yawPick = 0.9, pipeGroundY = pipeRadius, pipeHighY = 3.2;
+    let sw, lf; // sw: 0 = over trench, 1 = over stockpile ; lf: 0 = down, 1 = raised
+    if (u < 0.15)      { sw = 1; lf = 1 - ss(0.0, 0.15, u); }   // lower onto stockpile
+    else if (u < 0.22) { sw = 1; lf = 0; }                       // grab (dwell)
+    else if (u < 0.35) { sw = 1; lf = ss(0.22, 0.35, u); }       // hoist up
+    else if (u < 0.55) { sw = 1 - ss(0.35, 0.55, u); lf = 1; }   // slew to trench
+    else if (u < 0.70) { sw = 0; lf = 1 - ss(0.55, 0.70, u); }   // lower into trench
+    else if (u < 0.77) { sw = 0; lf = 0; }                       // place (dwell)
+    else if (u < 0.90) { sw = 0; lf = ss(0.77, 0.90, u); }       // hoist up
+    else               { sw = ss(0.90, 1.0, u); lf = 1; }        // slew back to stockpile
+    sup.rotation.y = sw * yawPick;
+    const lowY = pipeRestY + (pipeGroundY - pipeRestY) * sw;
+    liftingPipe.position.y = lowY + (pipeHighY - lowY) * lf;
     liftingPipe.rotation.z = 0;
     updateCrane();
 
