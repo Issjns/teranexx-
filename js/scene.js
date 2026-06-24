@@ -490,17 +490,53 @@ function initScene(canvas) {
   }
   const topRail = new THREE.Mesh(new THREE.BoxGeometry(18, 0.07, 0.07), new THREE.MeshStandardMaterial({ color: '#ffcc00', roughness: 0.5 }));
   topRail.position.set(-5, 0.72, 1.75); topRail.castShadow = true; scene.add(topRail);
-  // Site workers (hi-vis vest + hard hat)
-  function worker(x, z, ry) {
+  // Site workers with arms, a writing supervisor, and a guiding banksman
+  const workers = [];
+  function makeWorker(x, z, ry, vest, hatCol) {
     const g = new THREE.Group();
-    const legs = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.7, 10), new THREE.MeshStandardMaterial({ color: '#1d2a44' })); legs.position.y = 0.35;
-    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 0.55, 10), new THREE.MeshStandardMaterial({ color: '#ff7b00', roughness: 0.6 })); torso.position.y = 0.95;
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 12), new THREE.MeshStandardMaterial({ color: '#caa07a' })); head.position.y = 1.32;
-    const hat = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#ffd000' })); hat.position.y = 1.4;
-    [legs, torso, head, hat].forEach((m) => { m.castShadow = true; g.add(m); });
+    const skin = new THREE.MeshStandardMaterial({ color: '#caa07a', roughness: 0.85 });
+    const pants = new THREE.MeshStandardMaterial({ color: '#23304d', roughness: 0.85 });
+    const vestM = new THREE.MeshStandardMaterial({ color: vest, roughness: 0.6 });
+    const hatM = new THREE.MeshStandardMaterial({ color: hatCol, roughness: 0.5 });
+    const bootM = new THREE.MeshStandardMaterial({ color: '#15151a', roughness: 0.8 });
+    [-0.09, 0.09].forEach((dx) => {
+      const l = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.09, 0.72, 10), pants); l.position.set(dx, 0.36, 0); l.castShadow = true; g.add(l);
+      const boot = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.1, 0.28), bootM); boot.position.set(dx, 0.05, 0.05); boot.castShadow = true; g.add(boot);
+    });
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.2, 0.56, 12), vestM); torso.position.y = 0.98; torso.castShadow = true; g.add(torso);
+    const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.205, 0.205, 0.07, 12), new THREE.MeshStandardMaterial({ color: '#eaeaea' })); stripe.position.y = 0.95; g.add(stripe);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.13, 14, 14), skin); head.position.y = 1.4; head.castShadow = true; g.add(head);
+    const hatTop = new THREE.Mesh(new THREE.SphereGeometry(0.15, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), hatM); hatTop.position.y = 1.47; g.add(hatTop);
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.03, 14), hatM); brim.position.y = 1.47; g.add(brim);
+    function arm(side) {
+      const p = new THREE.Group(); p.position.set(side * 0.22, 1.22, 0);
+      const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.52, 10), vestM); upper.position.y = -0.26; upper.castShadow = true; p.add(upper);
+      const hand = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 10), skin); hand.position.y = -0.54; p.add(hand);
+      g.add(p); return p;
+    }
+    const leftArm = arm(-1), rightArm = arm(1);
     g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g);
+    return { group: g, leftArm, rightArm };
   }
-  worker(1.3, 2.0, -0.6); worker(-3.2, -2.2, 1.2); worker(3.6, 1.9, 2.4);
+  // General workers near the trench (posed as working with both hands)
+  const w1 = makeWorker(-1.2, 2.0, -1.1, '#ff7b00', '#ffd000');
+  w1.leftArm.rotation.x = -0.6; w1.rightArm.rotation.x = -0.8;
+  const w2 = makeWorker(0.6, -1.95, 1.0, '#ffd000', '#ff8800');
+  w2.rightArm.rotation.x = -1.1; w2.leftArm.rotation.x = -0.5;
+  // Supervisor with a clipboard, writing notes (white hard hat)
+  const sup1 = makeWorker(3.5, 2.4, -2.0, '#ffd000', '#f2f2f2');
+  const clip = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.32, 0.02), new THREE.MeshStandardMaterial({ color: '#caa15a', roughness: 0.7 }));
+  clip.position.set(-0.05, 1.04, 0.3); clip.rotation.x = -0.55; sup1.group.add(clip);
+  const clipPaper = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.26, 0.006), new THREE.MeshStandardMaterial({ color: '#ffffff' }));
+  clipPaper.position.set(-0.05, 1.06, 0.315); clipPaper.rotation.x = -0.55; sup1.group.add(clipPaper);
+  sup1.leftArm.rotation.x = -1.15; sup1.leftArm.rotation.z = 0.35;   // holds clipboard
+  sup1.rightArm.rotation.x = -1.0; sup1.rightArm.rotation.z = -0.3;  // writing hand
+  workers.push({ ...sup1, kind: 'write' });
+  // Banksman guiding the crane (raised arm, waving)
+  const guide = makeWorker(2.5, -1.75, Math.PI, '#ff7b00', '#ff8800');
+  guide.leftArm.rotation.z = 0.95;     // left arm out to the side
+  guide.rightArm.rotation.x = -2.4;    // right arm raised to direct the crane
+  workers.push({ ...guide, kind: 'guide' });
   // TERRANEX branding / livery
   function brandTex(text) {
     const c = document.createElement('canvas'); c.width = 512; c.height = 128;
@@ -608,6 +644,11 @@ function initScene(canvas) {
 
     beacon.material.emissiveIntensity = 0.6 + Math.abs(Math.sin(t * 4)) * 1.3;
     crBeacon.material.emissiveIntensity = 0.6 + Math.abs(Math.sin(t * 4 + 1)) * 1.3;
+    // workers: supervisor writes, banksman waves to guide the crane
+    for (const w of workers) {
+      if (w.kind === 'write') w.rightArm.rotation.x = -1.0 + Math.sin(t * 6) * 0.18;
+      else if (w.kind === 'guide') w.rightArm.rotation.x = -2.4 + Math.sin(t * 3) * 0.45;
+    }
 
     // Crane slews to pick a pipe from the stockpile, then swings over and lowers it into the trench
     const ss = (a, b, x) => { const k = Math.min(1, Math.max(0, (x - a) / (b - a))); return k * k * (3 - 2 * k); };
