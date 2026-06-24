@@ -556,6 +556,46 @@ function initScene(canvas) {
   decal(crane, 2.4, 0.45, 0, 1.55, -1.17, Math.PI);
   decal(sup, 1.7, 0.45, 0, 1.05, -2.02, Math.PI);        // crane counterweight
 
+  // ===== Excavated spoil: dirt thrown out of the trench + uneven edges + loose debris =====
+  function spoilMound(x, z, s, mat) {
+    const m = new THREE.Mesh(new THREE.DodecahedronGeometry(s, 0), mat);
+    m.position.set(x, s * 0.45 - 0.08, z);
+    m.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+    m.scale.y = 0.55 + Math.random() * 0.35;
+    m.castShadow = true; m.receiveShadow = true; scene.add(m);
+  }
+  // Big fresh spoil pile where the excavator dumps (near the dig)
+  for (let i = 0; i < 22; i++) {
+    spoilMound(-1.4 + Math.random() * 3.0, 2.4 + Math.random() * 1.3, 0.5 + Math.random() * 0.6, Math.random() > 0.4 ? dirtMat : dirtDarkMat);
+  }
+  // Continuous spoil ridge thrown out along the +z side of the open trench
+  for (let x = 4.5; x > -14; x -= 0.7) {
+    spoilMound(x + (Math.random() - 0.5) * 0.4, 2.15 + (Math.random() - 0.5) * 0.6, 0.35 + Math.random() * 0.5, Math.random() > 0.45 ? dirtMat : dirtDarkMat);
+  }
+  // Lighter spoil on the -z side + uneven clumps right at the trench lip (both edges)
+  for (let x = 4.5; x > -14; x -= 1.0) {
+    spoilMound(x + (Math.random() - 0.5) * 0.5, -2.1 + (Math.random() - 0.5) * 0.5, 0.3 + Math.random() * 0.4, dirtMat);
+    const side = Math.random() > 0.5 ? 1 : -1;
+    spoilMound(x + (Math.random() - 0.5) * 0.7, side * (1.32 + Math.random() * 0.22), 0.16 + Math.random() * 0.22, dirtDarkMat);
+  }
+  // Loose clods + small rocks scattered on the ground around the dig
+  for (let i = 0; i < 44; i++) {
+    const x = -15 + Math.random() * 20;
+    const z = (Math.random() > 0.5 ? 1 : -1) * (1.5 + Math.random() * 2.2);
+    const s = 0.07 + Math.random() * 0.18;
+    const m = new THREE.Mesh(new THREE.DodecahedronGeometry(s, 0), Math.random() > 0.5 ? dirtMat : rockMat);
+    m.position.set(x, s * 0.6, z); m.rotation.set(Math.random(), Math.random(), Math.random());
+    m.castShadow = true; scene.add(m);
+  }
+  // A few clods that have rolled down INTO the open trench (uneven floor)
+  for (let i = 0; i < 12; i++) {
+    const s = 0.1 + Math.random() * 0.16;
+    const m = new THREE.Mesh(new THREE.DodecahedronGeometry(s, 0), dirtDarkMat);
+    m.position.set(-14 + Math.random() * 12, TRENCH_FLOOR_TOP + 0.12, (Math.random() - 0.5) * (TRENCH_HALF * 1.6));
+    m.rotation.set(Math.random(), Math.random(), Math.random());
+    m.castShadow = true; scene.add(m);
+  }
+
   // ===== Gravity dirt clods =====
   const GRAVITY = -17;
   const clodGeo = new THREE.DodecahedronGeometry(0.12, 0);
