@@ -86,10 +86,10 @@ section { position: relative; }
   max-width: var(--max); margin: 0 auto; padding: 16px 24px;
   display: flex; align-items: center; justify-content: space-between;
 }
-.brand { display: flex; align-items: center; gap: 10px; color: var(--text); }
+.brand { display: flex; align-items: center; gap: 12px; color: var(--text); }
 .brand-mark { color: var(--amber); display: flex; }
-.brand-text { font-weight: 800; font-size: 1.15rem; display: flex; flex-direction: column; line-height: 1; }
-.brand-text small { font-size: 0.52rem; letter-spacing: 0.28em; color: var(--muted); font-weight: 600; margin-top: 3px; }
+.brand-text { font-weight: 800; font-size: 1.45rem; display: flex; flex-direction: column; line-height: 1; }
+.brand-text small { font-size: 0.6rem; letter-spacing: 0.26em; color: var(--muted); font-weight: 600; margin-top: 4px; }
 .nav-links { display: flex; align-items: center; gap: 28px; }
 .nav-links a { font-size: 0.92rem; font-weight: 500; color: var(--muted); transition: color 0.2s ease; }
 .nav-links a:hover { color: var(--text); }
