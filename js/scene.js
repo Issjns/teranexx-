@@ -515,26 +515,26 @@ function initScene(canvas) {
       g.add(p); return p;
     }
     const leftArm = arm(-1), rightArm = arm(1);
-    g.position.set(x, 0, z); g.rotation.y = ry; scene.add(g);
+    g.position.set(x, 0, z); g.rotation.y = ry; g.scale.setScalar(1.7); scene.add(g);
     return { group: g, leftArm, rightArm };
   }
-  // General workers near the trench (posed as working with both hands)
-  const w1 = makeWorker(-1.2, 2.0, -1.1, '#ff7b00', '#ffd000');
-  w1.leftArm.rotation.x = -0.6; w1.rightArm.rotation.x = -0.8;
-  const w2 = makeWorker(0.6, -1.95, 1.0, '#ffd000', '#ff8800');
-  w2.rightArm.rotation.x = -1.1; w2.leftArm.rotation.x = -0.5;
-  // Supervisor with a clipboard, writing notes (white hard hat)
-  const sup1 = makeWorker(3.5, 2.4, -2.0, '#ffd000', '#f2f2f2');
-  const clip = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.32, 0.02), new THREE.MeshStandardMaterial({ color: '#caa15a', roughness: 0.7 }));
-  clip.position.set(-0.05, 1.04, 0.3); clip.rotation.x = -0.55; sup1.group.add(clip);
-  const clipPaper = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.26, 0.006), new THREE.MeshStandardMaterial({ color: '#ffffff' }));
-  clipPaper.position.set(-0.05, 1.06, 0.315); clipPaper.rotation.x = -0.55; sup1.group.add(clipPaper);
-  sup1.leftArm.rotation.x = -1.15; sup1.leftArm.rotation.z = 0.35;   // holds clipboard
-  sup1.rightArm.rotation.x = -1.0; sup1.rightArm.rotation.z = -0.3;  // writing hand
+  // General workers right at the trench edge (posed working with both hands)
+  const w1 = makeWorker(-1.6, 2.0, Math.PI, '#ff7b00', '#ffd000');
+  w1.leftArm.rotation.x = -0.7; w1.rightArm.rotation.x = -0.9;
+  const w2 = makeWorker(1.2, -2.0, 0, '#ffd000', '#ff8800');
+  w2.rightArm.rotation.x = -1.1; w2.leftArm.rotation.x = -0.6;
+  // Supervisor with a clipboard, writing notes (white hard hat), facing the trench
+  const sup1 = makeWorker(-0.4, 2.7, Math.PI, '#ffd000', '#f2f2f2');
+  const clip = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.44, 0.03), new THREE.MeshStandardMaterial({ color: '#9c6b2f', roughness: 0.7 }));
+  clip.position.set(-0.08, 1.02, 0.34); clip.rotation.x = -0.6; sup1.group.add(clip);
+  const clipPaper = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.36, 0.008), new THREE.MeshStandardMaterial({ color: '#ffffff' }));
+  clipPaper.position.set(-0.08, 1.04, 0.36); clipPaper.rotation.x = -0.6; sup1.group.add(clipPaper);
+  sup1.leftArm.rotation.x = -1.2; sup1.leftArm.rotation.z = 0.3;    // holds clipboard
+  sup1.rightArm.rotation.x = -1.05; sup1.rightArm.rotation.z = -0.28; // writing hand
   workers.push({ ...sup1, kind: 'write' });
-  // Banksman guiding the crane (raised arm, waving)
-  const guide = makeWorker(2.5, -1.75, Math.PI, '#ff7b00', '#ff8800');
-  guide.leftArm.rotation.z = 0.95;     // left arm out to the side
+  // Banksman guiding the crane (raised arm, waving), facing the crane
+  const guide = makeWorker(2.6, -2.0, Math.PI, '#ff7b00', '#ff8800');
+  guide.leftArm.rotation.z = 1.0;      // left arm out to the side
   guide.rightArm.rotation.x = -2.4;    // right arm raised to direct the crane
   workers.push({ ...guide, kind: 'guide' });
   // TERRANEX branding / livery
