@@ -262,3 +262,8 @@ section { position: relative; }
 .director-role { display: inline-block; color: var(--amber); font-size: 0.78rem; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 600; margin-bottom: 12px; }
 .director-card p { color: var(--muted); font-size: 0.95rem; }
 @media (max-width: 560px) { .directors-grid { grid-template-columns: 1fr; } }
+
+
+/* ===== Crest logo ===== */
+.brand-logo { display: block; height: 46px; width: auto; }
+.footer-logo { display: block; height: 92px; width: auto; margin-bottom: 14px; }
